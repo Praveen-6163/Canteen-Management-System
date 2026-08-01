@@ -11,16 +11,28 @@
   },
   "rewrites": [
     {
-      "source": "/api(/.*)?",
-      "destination": {
-        "service": "backend"
-      }
+      "source": "/api/(.*)",
+      "destination": "/backend/api/$1"
+    },
+    {
+      "source": "/admin/login",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/admin/dashboard(.*)",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/dashboard(.*)",
+      "destination": "/frontend/index.html"
+    },
+    {
+      "source": "/signup(.*)",
+      "destination": "/frontend/index.html"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend"
-      }
+      "destination": "/frontend/$1"
     }
   ]
 }
