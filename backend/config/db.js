@@ -28,13 +28,20 @@ const seedDefaultCategoriesAndMenu = async () => {
       const menuCount = await Menu.countDocuments();
       if (menuCount === 0) {
         await Menu.create([
-          { name: 'Classic Burger', price: 120, category: snacks._id, imageURL: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500', isAvailable: true },
-          { name: 'Cheese Pizza', price: 250, category: lunch._id, imageURL: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500', isAvailable: true },
-          { name: 'Club Sandwich', price: 90, category: breakfast._id, imageURL: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=500', isAvailable: true },
-          { name: 'Garden Salad', price: 110, category: lunch._id, imageURL: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500', isAvailable: true },
-          { name: 'Hot Espresso', price: 60, category: beverages._id, imageURL: 'https://images.unsplash.com/photo-1510972527409-cef7e2b94902?w=500', isAvailable: true }
+          { name: 'Classic Burger', price: 120, category: snacks._id, imageURL: '/images/classic_burger.png', isAvailable: true },
+          { name: 'Cheese Pizza', price: 250, category: lunch._id, imageURL: '/images/cheese_pizza.png', isAvailable: true },
+          { name: 'Club Sandwich', price: 90, category: breakfast._id, imageURL: '/images/club_sandwich.png', isAvailable: true },
+          { name: 'Garden Salad', price: 110, category: lunch._id, imageURL: '/images/garden_salad.png', isAvailable: true },
+          { name: 'Hot Espresso', price: 60, category: beverages._id, imageURL: '/images/hot_espresso.png', isAvailable: true }
         ]);
         console.log('Seeded default menu items.');
+      } else {
+        await Menu.updateOne({ name: 'Classic Burger' }, { imageURL: '/images/classic_burger.png' });
+        await Menu.updateOne({ name: 'Cheese Pizza' }, { imageURL: '/images/cheese_pizza.png' });
+        await Menu.updateOne({ name: 'Club Sandwich' }, { imageURL: '/images/club_sandwich.png' });
+        await Menu.updateOne({ name: 'Garden Salad' }, { imageURL: '/images/garden_salad.png' });
+        await Menu.updateOne({ name: 'Hot Espresso' }, { imageURL: '/images/hot_espresso.png' });
+        console.log('Updated existing default menu item image URLs to realistic local assets.');
       }
     }
   } catch (error) {
