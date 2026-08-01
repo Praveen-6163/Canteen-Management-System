@@ -57,7 +57,7 @@ export default function AdminDashboard() {
     try {
       setLoading(true);
       const ordersRes = await fetchTokensAPI();
-      setOrders(ordersRes.data);
+      setOrders(ordersRes.data.data);
       const usersRes = await fetchUsersAPI();
       setUsers(usersRes.data);
     } catch (err) {

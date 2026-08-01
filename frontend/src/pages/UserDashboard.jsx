@@ -42,7 +42,7 @@ export default function UserDashboard() {
     try {
       setLoading(true);
       const res = await fetchTokensAPI();
-      setTokens(res.data);
+      setTokens(res.data.data);
     } catch (err) {
       console.error('Error fetching user tokens:', err);
     } finally {

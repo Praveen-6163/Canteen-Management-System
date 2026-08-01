@@ -72,6 +72,7 @@ export default function App() {
           <Route path="/profile" element={<Navigate to="/dashboard" replace />} />
           <Route path="/orders" element={<Navigate to="/dashboard" replace />} />
           <Route path="/menu" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           
           {/* Vercel static router matching */}
           <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
