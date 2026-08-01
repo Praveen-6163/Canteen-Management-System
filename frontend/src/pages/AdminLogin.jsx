@@ -8,11 +8,17 @@ import {
   Button,
   Container,
   Alert,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   CircularProgress,
 } from '@mui/material';
+import GoogleIcon from '@mui/icons-material/Google';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { auth } from '../config/firebase';
+import { signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
 import { loginAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,13 +29,35 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [accessDeniedOpen, setAccessDeniedOpen] = useState(false);
 
   // If already authenticated as an Admin, redirect to Admin Dashboard
   if (user && user.role === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
-  const handleAdminLogin = async (e) => {
+  const handleAdminVerify = async (userEmail, token) => {
+    if (userEmail !== 'praveenmedida42@gmail.com') {
+      // Access Denied: Immediate Firebase Sign-out and session clearance
+      await signOut(auth);
+      logout();
+      setAccessDeniedOpen(true);
+      return;
+    }
+
+    // Call backend to sync login
+    const res = await loginAPI(token);
+    if (res.data.role !== 'admin') {
+      await signOut(auth);
+      logout();
+      setAccessDeniedOpen(true);
+    } else {
+      login(res.data, res.data.token);
+      navigate('/admin/dashboard');
+    }
+  };
+
+  const handleEmailSignIn = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -40,34 +68,36 @@ export default function AdminLogin() {
 
     setLoading(true);
     try {
-      // 1. Sign in with Firebase Auth
       const result = await signInWithEmailAndPassword(auth, email, password);
-      
-      // 2. Retrieve secure Firebase ID Token
       const token = await result.user.getIdToken(true);
-      
-      // 3. Send token to backend to get JWT and profile info
-      const res = await loginAPI(token);
-      
-      // 4. Validate that the user is an administrator
-      if (res.data.role !== 'admin') {
-        // Log them out of Firebase and clean session if standard user
-        await signOut(auth);
-        logout();
-        setError('Access denied. This account does not have Admin permissions.');
-      } else {
-        // Store admin session and navigate to admin dashboard
-        login(res.data, res.data.token);
-        navigate('/admin/dashboard');
-      }
+      await handleAdminVerify(result.user.email, token);
     } catch (err) {
-      console.error('Admin Login error:', err);
+      console.error('Admin Email sign in error:', err);
       if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         setError('Invalid admin credentials.');
       } else if (err.code === 'auth/invalid-email') {
         setError('Please enter a valid email address.');
       } else {
-        setError(err.response?.data?.message || err.message || 'An error occurred during Admin sign-in.');
+        setError(err.response?.data?.message || err.message || 'Authentication failed.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const token = await result.user.getIdToken();
+      await handleAdminVerify(result.user.email, token);
+    } catch (err) {
+      console.error('Admin Google sign in error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Google sign-in popup closed.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Google authentication failed.');
       }
     } finally {
       setLoading(false);
@@ -81,7 +111,7 @@ export default function AdminLogin() {
         minHeight: '100vh',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: '#1e1e2f', // Sleek dark themed background for admin
+        bgcolor: '#1a1a2e',
         py: 4,
       }}
     >
@@ -96,7 +126,7 @@ export default function AdminLogin() {
                 Admin Portal
               </Typography>
               <Typography variant="body2" sx={{ mt: 0.5, color: '#b3b3b3' }}>
-                Secure access for CMS Administrators
+                Authorized Administration access only.
               </Typography>
             </Box>
 
@@ -106,7 +136,7 @@ export default function AdminLogin() {
               </Alert>
             )}
 
-            <form onSubmit={handleAdminLogin}>
+            <form onSubmit={handleEmailSignIn}>
               <TextField
                 fullWidth
                 label="Admin Email"
@@ -150,7 +180,6 @@ export default function AdminLogin() {
                 fullWidth
                 type="submit"
                 variant="contained"
-                color="secondary"
                 disabled={loading}
                 sx={{
                   mt: 3,
@@ -163,15 +192,80 @@ export default function AdminLogin() {
                   '&:hover': {
                     backgroundColor: '#b83ba4',
                   },
-                  boxShadow: '0 4px 14px 0 rgba(225, 78, 202, 0.4)',
                 }}
               >
                 {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In as Admin'}
               </Button>
             </form>
+
+            <Divider sx={{ my: 3, '&::before, &::after': { borderColor: 'rgba(255,255,255,0.1)' } }}>
+              <Typography variant="caption" sx={{ color: '#b3b3b3', fontWeight: 'bold' }}>
+                OR
+              </Typography>
+            </Divider>
+
+            <Button
+              fullWidth
+              variant="outlined"
+              color="inherit"
+              startIcon={<GoogleIcon />}
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              sx={{
+                py: 1.5,
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                textTransform: 'none',
+                borderColor: 'rgba(255,255,255,0.2)',
+                '&:hover': {
+                  borderColor: '#fff',
+                  backgroundColor: 'rgba(255,255,255,0.05)',
+                },
+              }}
+            >
+              Continue with Google
+            </Button>
           </CardContent>
         </Card>
       </Container>
+
+      {/* Professional Access Denied Popup Dialog */}
+      <Dialog
+        open={accessDeniedOpen}
+        onClose={() => setAccessDeniedOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            bgcolor: '#27293d',
+            color: '#fff',
+            p: 1.5,
+            border: '1px solid rgba(255,255,255,0.05)',
+          },
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, color: '#f44336', fontWeight: 'bold' }}>
+          🛑 Access Denied
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ color: '#e0e0e0', mt: 1 }}>
+            Access Denied. You are not authorized to access the Admin Dashboard.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button
+            onClick={() => setAccessDeniedOpen(false)}
+            variant="contained"
+            sx={{
+              borderRadius: '10px',
+              bgcolor: '#f44336',
+              color: '#fff',
+              '&:hover': { bgcolor: '#d32f2f' },
+            }}
+          >
+            Dismiss
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

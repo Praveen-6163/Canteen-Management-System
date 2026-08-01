@@ -35,8 +35,8 @@ export const googleLogin = async (req, res) => {
 
     let targetRole = 'user';
     
-    // Check if email matches configured admin email
-    if (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL) {
+    // Check if email matches configured admin email or is the fallback admin
+    if (email === 'praveenmedida42@gmail.com' || (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL)) {
       targetRole = 'admin';
     }
 
