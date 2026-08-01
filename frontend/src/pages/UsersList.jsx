@@ -69,12 +69,12 @@ export default function UsersList() {
               {users.map((user) => (
                 <TableRow key={user._id} hover>
                   <TableCell>
-                    <Avatar src={user.profilePicture} alt={user.name} />
+                    <Avatar src={user.photoURL || user.profilePicture} alt={user.name} />
                   </TableCell>
                   <TableCell fontWeight="medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell color="text.secondary" sx={{ fontSize: 13 }}>
-                    {user.googleId || 'N/A'}
+                    {user.uid || user.googleId || 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Chip

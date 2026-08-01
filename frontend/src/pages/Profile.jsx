@@ -37,7 +37,7 @@ export default function Profile() {
           {/* Shift Avatar up over the banner */}
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
             <Avatar
-              src={user.profilePicture}
+              src={user.photoURL || user.profilePicture}
               alt={user.name}
               sx={{
                 width: 100,

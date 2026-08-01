@@ -17,24 +17,37 @@
       }
     },
     {
-      "source": "/assets/(.*)",
+      "source": "/admin/login",
       "destination": {
         "service": "frontend",
-        "path": "/assets/$1"
+        "path": "/index.html"
       }
     },
     {
-      "source": "/favicon.ico",
+      "source": "/admin/dashboard(/.*)?",
       "destination": {
         "service": "frontend",
-        "path": "/favicon.ico"
+        "path": "/index.html"
+      }
+    },
+    {
+      "source": "/dashboard",
+      "destination": {
+        "service": "frontend",
+        "path": "/index.html"
+      }
+    },
+    {
+      "source": "/signup",
+      "destination": {
+        "service": "frontend",
+        "path": "/index.html"
       }
     },
     {
       "source": "/(.*)",
       "destination": {
-        "service": "frontend",
-        "path": "/index.html"
+        "service": "frontend"
       }
     }
   ]

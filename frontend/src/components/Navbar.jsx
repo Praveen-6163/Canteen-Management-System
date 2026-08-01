@@ -91,7 +91,7 @@ export default function Navbar({ onDrawerToggle, mode, toggleTheme, isMobile }) 
             <>
               <Tooltip title={user.name}>
                 <IconButton onClick={handleMenuOpen} sx={{ p: 0 }}>
-                  <Avatar alt={user.name} src={user.profilePicture} />
+                  <Avatar alt={user.name} src={user.photoURL || user.profilePicture} />
                 </IconButton>
               </Tooltip>
               <Menu

@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Admin from '../models/Admin.js';
 import { verifyGoogleToken } from '../services/authService.js';
 
 /**
@@ -35,8 +36,9 @@ export const googleLogin = async (req, res) => {
 
     let targetRole = 'user';
     
-    // Check if email matches configured admin email or is the fallback admin
-    if (email === 'praveenmedida42@gmail.com' || (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL)) {
+    // Check if email exists in the admins collection
+    const adminRecord = await Admin.findOne({ email });
+    if (adminRecord || (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL)) {
       targetRole = 'admin';
     }
 
@@ -46,7 +48,7 @@ export const googleLogin = async (req, res) => {
     if (!user) {
       // Create new user in database
       user = await User.create({
-        name: name || email.split('@')[0], // Fallback if no name provided in signup
+        name: name || email.split('@')[0],
         email,
         uid,
         photoURL,
@@ -54,19 +56,17 @@ export const googleLogin = async (req, res) => {
         role: targetRole,
         lastLogin: new Date(),
       });
-      console.log(`Successfully registered new Firebase user: ${email} (${provider})`);
+      console.log(`Successfully registered new Firebase user: ${email} (${provider}) as ${targetRole}`);
     } else {
-      // Update existing user profile information and update last login
+      // Update existing user profile information and role
       if (name) user.name = name;
       if (photoURL) user.photoURL = photoURL;
       user.uid = uid;
       user.provider = provider;
+      user.role = targetRole; // Sync role dynamically in case list of admins has changed
       user.lastLogin = new Date();
-      if (targetRole === 'admin') {
-        user.role = 'admin';
-      }
       await user.save();
-      console.log(`Successfully authenticated existing Firebase user: ${email} (${provider})`);
+      console.log(`Successfully authenticated existing Firebase user: ${email} (${provider}) as ${targetRole}`);
     }
 
     res.json({

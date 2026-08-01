@@ -79,7 +79,7 @@ export const getTokens = async (req, res) => {
 
     const total = await Token.countDocuments(query);
     const tokens = await Token.find(query)
-      .populate('userId', 'name email profilePicture')
+      .populate('userId', 'name email photoURL')
       .sort(sortBy)
       .skip(skip)
       .limit(limit);
@@ -145,7 +145,7 @@ export const createToken = async (req, res) => {
       userId: req.user._id,
     });
 
-    const populatedToken = await Token.findById(token._id).populate('userId', 'name email profilePicture');
+    const populatedToken = await Token.findById(token._id).populate('userId', 'name email photoURL');
     res.status(201).json(populatedToken);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -196,7 +196,7 @@ export const updateToken = async (req, res) => {
     }
 
     const updatedToken = await token.save();
-    const populatedToken = await Token.findById(updatedToken._id).populate('userId', 'name email profilePicture');
+    const populatedToken = await Token.findById(updatedToken._id).populate('userId', 'name email photoURL');
     res.status(200).json(populatedToken);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -260,7 +260,7 @@ export const getDashboardAnalytics = async (req, res) => {
     const usersCount = req.user.role === 'admin' ? await User.countDocuments({}) : 1;
 
     const recentOrders = await Token.find(matchFilter)
-      .populate('userId', 'name email profilePicture')
+      .populate('userId', 'name email photoURL')
       .sort({ createdAt: -1 })
       .limit(6);
 
