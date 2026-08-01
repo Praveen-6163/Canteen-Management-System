@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Loader from './components/Loader';
@@ -98,43 +97,39 @@ export default function App() {
     [mode]
   );
 
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
-
   return (
-    <GoogleOAuthProvider clientId={googleClientId}>
-      <AuthProvider>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <BrowserRouter>
-            <Routes>
-              {/* Initial Screen Check */}
-              <Route path="/splash" element={<SplashScreen />} />
-              <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <BrowserRouter>
+          <Routes>
+            {/* Initial Screen Check */}
+            <Route path="/splash" element={<SplashScreen />} />
+            <Route path="/login" element={<Login />} />
 
-              {/* Layout Wrappers with persistent side/bottom navigation */}
-              <Route path="/" element={<Layout mode={mode} toggleTheme={toggleTheme} />}>
-                <Route index element={<Dashboard />} />
-                <Route path="tokens" element={<TokenList />} />
-                <Route path="profile" element={<Profile />} />
-                
-                {/* Admin Protected routes */}
-                <Route
-                  path="users"
-                  element={
-                    <AdminRoute>
-                      <UsersList />
-                    </AdminRoute>
-                  }
-                />
-              </Route>
+            {/* Layout Wrappers with persistent side/bottom navigation */}
+            <Route path="/" element={<Layout mode={mode} toggleTheme={toggleTheme} />}>
+              <Route index element={<Dashboard />} />
+              <Route path="tokens" element={<TokenList />} />
+              <Route path="profile" element={<Profile />} />
+              
+              {/* Admin Protected routes */}
+              <Route
+                path="users"
+                element={
+                  <AdminRoute>
+                    <UsersList />
+                  </AdminRoute>
+                }
+              />
+            </Route>
 
-              {/* Redirects */}
-              <Route path="/index.html" element={<Navigate to="/splash" replace />} />
-              <Route path="*" element={<Navigate to="/splash" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </ThemeProvider>
-      </AuthProvider>
-    </GoogleOAuthProvider>
+            {/* Redirects */}
+            <Route path="/index.html" element={<Navigate to="/splash" replace />} />
+            <Route path="*" element={<Navigate to="/splash" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

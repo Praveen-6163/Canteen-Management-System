@@ -7,9 +7,12 @@ import {
   Container,
   Alert,
   CircularProgress,
+  Button,
 } from '@mui/material';
-import { GoogleLogin } from '@react-oauth/google';
+import GoogleIcon from '@mui/icons-material/Google';
 import { useNavigate, Navigate } from 'react-router-dom';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
 import { loginAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,27 +27,33 @@ export default function Login() {
     return <Navigate to="/" replace />;
   }
 
-  const handleGoogleSuccess = async (response) => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await loginAPI(response.credential);
+      // Trigger Google Popup Sign-in using Firebase
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      // Obtain the secure Firebase ID Token (JWT)
+      const token = await result.user.getIdToken();
+      
+      // Send the token to backend for server-side verification
+      const res = await loginAPI(token);
+      
+      // Store user and JWT details via Auth Context
       login(res.data, res.data.token);
       navigate('/');
     } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.message || 'Google Authentication failed. Please try again.');
+      console.error('Firebase Auth Error:', err);
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Sign-in popup closed by user. Please try again.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Google authentication failed.');
+      }
     } finally {
       setLoading(false);
     }
   };
-
-  const handleGoogleFailure = (error) => {
-    console.error('Google Sign In Error:', error);
-    setError('Google Sign In was unsuccessful. Try again.');
-  };
-
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   return (
     <Box
@@ -81,32 +90,32 @@ export default function Login() {
             {loading ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4, gap: 1 }}>
                 <CircularProgress size={30} />
-                <Typography variant="body2" color="text.secondary">Authenticating with server...</Typography>
+                <Typography variant="body2" color="text.secondary">Authenticating...</Typography>
               </Box>
             ) : (
-              <>
-                {/* Google OAuth Login Component */}
-                {googleClientId ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
-                    <GoogleLogin
-                      onSuccess={handleGoogleSuccess}
-                      onError={handleGoogleFailure}
-                      useOneTap
-                      theme="filled_blue"
-                      shape="pill"
-                    />
-                  </Box>
-                ) : (
-                  <Box sx={{ my: 3 }}>
-                    <Alert severity="warning" sx={{ textAlign: 'left', borderRadius: '8px' }}>
-                      <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 0.5 }}>
-                        Google OAuth not configured
-                      </Typography>
-                      Please set the <strong>VITE_GOOGLE_CLIENT_ID</strong> environment variable in your frontend <strong>.env</strong> file and restart the development server.
-                    </Alert>
-                  </Box>
-                )}
-              </>
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4, width: '100%' }}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="primary"
+                  startIcon={<GoogleIcon />}
+                  onClick={handleGoogleSignIn}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: '24px',
+                    fontWeight: 'bold',
+                    backgroundColor: '#1976D2',
+                    '&:hover': {
+                      backgroundColor: '#1565c0',
+                    },
+                    boxShadow: '0 4px 14px 0 rgba(25, 118, 210, 0.4)',
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                  }}
+                >
+                  Continue with Google
+                </Button>
+              </Box>
             )}
           </CardContent>
         </Card>
