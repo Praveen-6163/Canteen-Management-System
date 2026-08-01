@@ -11,19 +11,30 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    googleId: {
+    photoURL: {
       type: String,
-      required: true,
-      unique: true,
-    },
-    profilePicture: {
-      type: String,
+      default: '',
     },
     role: {
       type: String,
       required: true,
       enum: ['user', 'admin'],
       default: 'user',
+    },
+    provider: {
+      type: String,
+      required: true,
+      enum: ['google', 'email'],
+      default: 'google',
+    },
+    uid: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    lastLogin: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

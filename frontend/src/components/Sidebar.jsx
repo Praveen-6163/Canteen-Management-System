@@ -13,18 +13,22 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
+import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isAdmin } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sidebar({ open, drawerWidth }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const showAdminMenu = isAdmin();
+  const { user } = useAuth();
+
+  const showAdminMenu = user?.role === 'admin';
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'My Tokens', icon: <ReceiptIcon />, path: '/tokens' },
-    { text: 'Profile', icon: <PersonIcon />, path: '/profile' },
+    { text: 'Home / Dashboard', icon: <DashboardIcon />, path: '/' },
+    { text: "Today's Menu", icon: <RestaurantMenuIcon />, path: '/tokens' },
+    { text: 'My Orders', icon: <ReceiptIcon />, path: '/tokens' },
+    { text: 'My Profile', icon: <PersonIcon />, path: '/profile' },
   ];
 
   const adminItems = [

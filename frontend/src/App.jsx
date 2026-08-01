@@ -1,26 +1,48 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, createTheme, CssBaseline, Box, Typography } from '@mui/material';
 
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Loader from './components/Loader';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute, AdminRoute, GuestRoute, AdminGuestRoute } from './components/RouteGuards';
 
 // Layout & Pages
 import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
 import SplashScreen from './pages/SplashScreen';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import AdminLogin from './pages/AdminLogin';
 import Dashboard from './pages/Dashboard';
+import AdminDashboardOverview from './pages/AdminDashboardOverview';
 import Profile from './pages/Profile';
 import TokenList from './pages/TokenList';
 import UsersList from './pages/UsersList';
 import NotFound from './pages/NotFound';
 
-// Admin Private Route Guard
-const AdminRoute = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <Loader message="Verifying permissions..." />;
-  return user && user.role === 'admin' ? children : <Navigate to="/" replace />;
-};
+// Premium Visual Placeholder Views for Admin Options
+const AdminPlaceholderView = ({ title, icon, description }) => (
+  <Box
+    sx={{
+      p: 6,
+      bgcolor: '#27293d',
+      borderRadius: '24px',
+      color: '#fff',
+      textAlign: 'center',
+      maxWidth: 600,
+      mx: 'auto',
+      mt: 6,
+      boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+    }}
+  >
+    <Typography variant="h1" sx={{ mb: 2, fontSize: '4.5rem' }}>{icon}</Typography>
+    <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ color: '#e0e0e0' }}>
+      {title}
+    </Typography>
+    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', mb: 3 }}>
+      {description}
+    </Typography>
+  </Box>
+);
 
 export default function App() {
   const [mode, setMode] = useState(() => {
@@ -103,17 +125,113 @@ export default function App() {
         <CssBaseline />
         <BrowserRouter>
           <Routes>
-            {/* Initial Screen Check */}
+            {/* Splash screen check */}
             <Route path="/splash" element={<SplashScreen />} />
-            <Route path="/login" element={<Login />} />
 
-            {/* Layout Wrappers with persistent side/bottom navigation */}
-            <Route path="/" element={<Layout mode={mode} toggleTheme={toggleTheme} />}>
+            {/* User Guest Routes */}
+            <Route
+              path="/login"
+              element={
+                <GuestRoute>
+                  <Login />
+                </GuestRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <GuestRoute>
+                  <Signup />
+                </GuestRoute>
+              }
+            />
+
+            {/* Admin Guest Routes */}
+            <Route
+              path="/admin"
+              element={
+                <AdminGuestRoute>
+                  <AdminLogin />
+                </AdminGuestRoute>
+              }
+            />
+
+            {/* Admin Protected layout/routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <AdminRoute>
+                  <AdminLayout mode={mode} toggleTheme={toggleTheme} />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<AdminDashboardOverview />} />
+              <Route
+                path="food"
+                element={
+                  <AdminPlaceholderView
+                    title="Food Management"
+                    icon="🍎"
+                    description="Configure, update, and manage the general catalog of food products and stock thresholds available in the canteen."
+                  />
+                }
+              />
+              <Route
+                path="menu"
+                element={
+                  <AdminPlaceholderView
+                    title="Menu Management"
+                    icon="📋"
+                    description="Establish and publish daily, weekly, or seasonal meal menus and set ordering price points for customers."
+                  />
+                }
+              />
+              <Route
+                path="coupons"
+                element={
+                  <AdminPlaceholderView
+                    title="Coupons & Offers"
+                    icon="🏷️"
+                    description="Deploy discount codes, special customer loyalty rewards, and promotional canteen coupon events."
+                  />
+                }
+              />
+              <Route
+                path="analytics"
+                element={
+                  <AdminPlaceholderView
+                    title="Deep Analytics"
+                    icon="📈"
+                    description="Access advanced data summaries, print order history reports, and review canteen efficiency KPIs."
+                  />
+                }
+              />
+              <Route
+                path="settings"
+                element={
+                  <AdminPlaceholderView
+                    title="System Settings"
+                    icon="⚙️"
+                    description="Modify system parameters, set working hours, customize currency, and configure SMTP mail settings."
+                  />
+                }
+              />
+            </Route>
+
+            {/* User Protected layout/routes */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout mode={mode} toggleTheme={toggleTheme} />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Dashboard />} />
               <Route path="tokens" element={<TokenList />} />
               <Route path="profile" element={<Profile />} />
               
-              {/* Admin Protected routes */}
+              {/* Admin Protected routes embedded inside main wrapper if accessed */}
               <Route
                 path="users"
                 element={
@@ -124,9 +242,9 @@ export default function App() {
               />
             </Route>
 
-            {/* Redirects */}
+            {/* Fallbacks */}
             <Route path="/index.html" element={<Navigate to="/splash" replace />} />
-            <Route path="*" element={<Navigate to="/splash" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

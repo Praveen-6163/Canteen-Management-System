@@ -59,10 +59,11 @@ export const verifyGoogleToken = async (idToken) => {
 
     // Return mapped fields matching the expected controller contract
     return {
-      name: verifiedPayload.name,
+      name: verifiedPayload.name || '',
       email: verifiedPayload.email,
-      sub: verifiedPayload.sub,
-      picture: verifiedPayload.picture,
+      uid: verifiedPayload.sub,
+      photoURL: verifiedPayload.picture || '',
+      provider: verifiedPayload.firebase?.sign_in_provider === 'password' ? 'email' : 'google',
     };
   } catch (error) {
     console.error('Firebase Token Verification Failed:', error);

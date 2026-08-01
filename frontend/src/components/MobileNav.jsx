@@ -5,12 +5,14 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { isAdmin } from '../services/auth';
+import { useAuth } from '../context/AuthContext';
 
 export default function MobileNav() {
   const navigate = useNavigate();
   const location = useLocation();
-  const showAdminMenu = isAdmin();
+  const { user } = useAuth();
+
+  const showAdminMenu = user?.role === 'admin';
 
   // Find active tab value based on path
   const getValue = () => {

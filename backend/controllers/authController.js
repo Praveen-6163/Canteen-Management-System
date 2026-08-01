@@ -17,7 +17,7 @@ const generateToken = (id) => {
 };
 
 /**
- * @desc    Verify Google ID Token, find or create user in MongoDB, and issue JWT
+ * @desc    Verify Firebase ID Token, find or create user in MongoDB, and issue JWT
  * @route   POST /api/users/login
  * @access  Public
  */
@@ -31,7 +31,7 @@ export const googleLogin = async (req, res) => {
   try {
     const payload = await verifyGoogleToken(credential);
     
-    const { name, email, sub: googleId, picture: profilePicture } = payload;
+    const { name, email, uid, photoURL, provider } = payload;
 
     let targetRole = 'user';
     
@@ -46,36 +46,42 @@ export const googleLogin = async (req, res) => {
     if (!user) {
       // Create new user in database
       user = await User.create({
-        name,
+        name: name || email.split('@')[0], // Fallback if no name provided in signup
         email,
-        googleId,
-        profilePicture,
+        uid,
+        photoURL,
+        provider,
         role: targetRole,
+        lastLogin: new Date(),
       });
-      console.log(`Successfully registered new Google user: ${email}`);
+      console.log(`Successfully registered new Firebase user: ${email} (${provider})`);
     } else {
-      // Update existing user profile information from Google
-      user.name = name;
-      user.profilePicture = profilePicture;
-      user.googleId = googleId;
+      // Update existing user profile information and update last login
+      if (name) user.name = name;
+      if (photoURL) user.photoURL = photoURL;
+      user.uid = uid;
+      user.provider = provider;
+      user.lastLogin = new Date();
       if (targetRole === 'admin') {
         user.role = 'admin';
       }
       await user.save();
-      console.log(`Successfully authenticated existing Google user: ${email}`);
+      console.log(`Successfully authenticated existing Firebase user: ${email} (${provider})`);
     }
 
     res.json({
       _id: user._id,
       name: user.name,
       email: user.email,
-      profilePicture: user.profilePicture,
+      photoURL: user.photoURL,
       role: user.role,
+      provider: user.provider,
+      uid: user.uid,
       token: generateToken(user._id),
     });
   } catch (error) {
-    console.error('Google Auth Controller Error:', error);
-    res.status(401).json({ message: error.message || 'Google Authentication failed' });
+    console.error('Firebase Auth Controller Error:', error);
+    res.status(401).json({ message: error.message || 'Authentication failed' });
   }
 };
 
@@ -93,8 +99,10 @@ export const getUserProfile = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        profilePicture: user.profilePicture,
+        photoURL: user.photoURL,
         role: user.role,
+        provider: user.provider,
+        uid: user.uid,
       });
     } else {
       res.status(404).json({ message: 'User not found' });
