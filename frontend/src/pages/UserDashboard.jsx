@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { fetchTokensAPI, createTokenAPI } from '../services/api';
+import { fetchTokensAPI, createTokenAPI, fetchMenuAPI, fetchCategoriesAPI } from '../services/api';
 
 // Material UI Icons for Tailwind Layout
 import HomeIcon from '@mui/icons-material/Home';
@@ -25,10 +25,15 @@ export default function UserDashboard() {
   const [tokens, setTokens] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Dynamic Menu and Categories State
+  const [menuItems, setMenuItems] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
   // New order form fields
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [price, setPrice] = useState(5.99);
+  const [price, setPrice] = useState(0);
   
   // Track token fields
   const [trackTokenNumber, setTrackTokenNumber] = useState('');
@@ -36,7 +41,19 @@ export default function UserDashboard() {
 
   useEffect(() => {
     loadUserTokens();
+    loadMenuAndCategories();
   }, []);
+
+  const loadMenuAndCategories = async () => {
+    try {
+      const menuRes = await fetchMenuAPI();
+      setMenuItems(menuRes.data);
+      const catRes = await fetchCategoriesAPI();
+      setCategories(catRes.data);
+    } catch (err) {
+      console.error('Error fetching menu/categories:', err);
+    }
+  };
 
   const loadUserTokens = async () => {
     try {
@@ -88,7 +105,7 @@ export default function UserDashboard() {
     }
   };
 
-  const menuItems = [
+  const navMenuItems = [
     { id: 'home', text: 'Home', icon: <HomeIcon /> },
     { id: 'menu', text: "Today's Menu", icon: <RestaurantMenuIcon /> },
     { id: 'orders', text: 'My Orders', icon: <ReceiptLongIcon /> },
@@ -115,7 +132,7 @@ export default function UserDashboard() {
         </div>
         
         <nav className="flex-1 p-4 space-y-1">
-          {menuItems.map(item => (
+          {navMenuItems.map(item => (
             <button
               key={item.id}
               onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
@@ -184,7 +201,7 @@ export default function UserDashboard() {
                 </div>
                 <div className="p-6 bg-[#12131a] rounded-2xl border border-white/5">
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider block mb-1">Total Spent</span>
-                  <span className="text-3xl font-extrabold text-indigo-500">${totalSpent.toFixed(2)}</span>
+                  <span className="text-3xl font-extrabold text-indigo-500">₹{totalSpent.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -198,17 +215,17 @@ export default function UserDashboard() {
                       value={itemName}
                       onChange={(e) => {
                         setItemName(e.target.value);
-                        const prices = { Burger: 5.99, Pizza: 8.99, Sandwich: 4.49, Salad: 4.99, Coffee: 2.49 };
-                        setPrice(prices[e.target.value] || 5.99);
+                        const selectedFood = menuItems.find(m => m.name === e.target.value);
+                        setPrice(selectedFood ? selectedFood.price : 0);
                       }}
                       className="w-full rounded-xl border border-white/10 bg-[#1e1f29] px-4 py-2.5 text-sm outline-none text-white"
                     >
                       <option value="">-- Choose Food --</option>
-                      <option value="Burger">🍔 Classic Burger ($5.99)</option>
-                      <option value="Pizza">🍕 Cheese Pizza ($8.99)</option>
-                      <option value="Sandwich">🥪 Club Sandwich ($4.49)</option>
-                      <option value="Salad">🥗 Garden Salad ($4.99)</option>
-                      <option value="Coffee">☕ Hot Espresso ($2.49)</option>
+                      {menuItems.filter(m => m.isAvailable).map(m => (
+                        <option key={m._id} value={m.name}>
+                          {m.name} (₹{m.price})
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -226,7 +243,7 @@ export default function UserDashboard() {
                     <input
                       type="text"
                       disabled
-                      value={`$${(quantity * price).toFixed(2)}`}
+                      value={`₹${(quantity * price).toFixed(2)}`}
                       className="w-full rounded-xl border border-white/10 bg-[#1e1f29]/50 px-4 py-2.5 text-sm outline-none text-gray-400"
                     />
                   </div>
@@ -242,36 +259,73 @@ export default function UserDashboard() {
           )}
 
           {activeTab === 'menu' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { name: 'Classic Burger', price: 5.99, icon: '🍔', desc: 'Flame-grilled patty with cheddar cheese.' },
-                { name: 'Cheese Pizza', price: 8.99, icon: '🍕', desc: 'Fresh mozzarella and classic red sauce.' },
-                { name: 'Club Sandwich', price: 4.49, icon: '🥪', desc: 'Triple-decker sandwich with chicken salad.' },
-                { name: 'Garden Salad', price: 4.99, icon: '🥗', desc: 'Mixed baby greens with vinaigrette.' },
-                { name: 'Hot Espresso', price: 2.49, icon: '☕', desc: 'Rich espresso shot served piping hot.' },
-              ].map(item => (
-                <div key={item.name} className="bg-[#12131a] rounded-2xl border border-white/5 p-6 flex flex-col justify-between">
-                  <div>
-                    <span className="text-4xl block mb-2">{item.icon}</span>
-                    <h4 className="text-lg font-bold">{item.name}</h4>
-                    <p className="text-sm text-gray-400 mt-1 mb-4">{item.desc}</p>
+            <div className="space-y-6">
+              {/* Category Filter Badges */}
+              <div className="flex flex-wrap gap-2 pb-2">
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-[#12131a] text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                >
+                  All Items
+                </button>
+                {categories.map(cat => (
+                  <button
+                    key={cat._id}
+                    onClick={() => setSelectedCategory(cat._id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition ${selectedCategory === cat._id ? 'bg-blue-600 text-white' : 'bg-[#12131a] text-gray-400 hover:bg-white/5 hover:text-white'}`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
+
+              {/* Menu items Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {menuItems
+                  .filter(item => item.isAvailable && (selectedCategory === 'all' || item.category?._id === selectedCategory))
+                  .map(item => (
+                    <div key={item._id} className="bg-[#12131a] rounded-2xl border border-white/5 overflow-hidden flex flex-col justify-between">
+                      {item.imageURL && (
+                        <div className="h-40 overflow-hidden relative">
+                          <img src={item.imageURL} alt={item.name} className="w-full h-full object-cover" />
+                          <span className="absolute top-3 right-3 text-xs bg-blue-600 text-white px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                            {item.category?.name || 'Food'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                          {!item.imageURL && (
+                            <span className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded font-bold uppercase tracking-wider mb-2 inline-block">
+                              {item.category?.name || 'Food'}
+                            </span>
+                          )}
+                          <h4 className="text-lg font-bold">{item.name}</h4>
+                          <p className="text-sm text-gray-400 mt-1 mb-4">Freshly prepared canteen selection.</p>
+                        </div>
+                        <div className="flex justify-between items-center mt-auto">
+                          <span className="text-xl font-black text-blue-500">₹{item.price.toFixed(2)}</span>
+                          <button
+                            onClick={() => {
+                              setItemName(item.name);
+                              setPrice(item.price);
+                              setQuantity(1);
+                              setActiveTab('home');
+                            }}
+                            className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-4 py-2 rounded-xl text-xs font-extrabold transition"
+                          >
+                            Quick Order
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                {menuItems.filter(item => item.isAvailable && (selectedCategory === 'all' || item.category?._id === selectedCategory)).length === 0 && (
+                  <div className="col-span-full py-12 text-center text-gray-500">
+                    No available items found in this category.
                   </div>
-                  <div className="flex justify-between items-center mt-auto">
-                    <span className="text-xl font-black text-blue-500">${item.price.toFixed(2)}</span>
-                    <button
-                      onClick={() => {
-                        setItemName(item.name);
-                        setPrice(item.price);
-                        setQuantity(1);
-                        setActiveTab('home');
-                      }}
-                      className="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white px-4 py-2 rounded-xl text-xs font-extrabold transition"
-                    >
-                      Quick Order
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )}
+              </div>
             </div>
           )}
 
@@ -298,7 +352,7 @@ export default function UserDashboard() {
                         <td className="px-6 py-4 font-mono font-bold text-blue-400">{token.tokenNumber}</td>
                         <td className="px-6 py-4">{token.itemName}</td>
                         <td className="px-6 py-4">{token.quantity}</td>
-                        <td className="px-6 py-4 font-bold">${token.totalAmount.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold">₹{token.totalAmount.toFixed(2)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-black uppercase ${
                             token.status === 'ready' ? 'bg-green-500/20 text-green-400' :
@@ -356,7 +410,7 @@ export default function UserDashboard() {
                   </div>
                   <div>
                     <h4 className="text-lg font-bold">{trackedOrder.itemName}</h4>
-                    <p className="text-sm text-gray-400">Qty: {trackedOrder.quantity} • Total: ${trackedOrder.totalAmount.toFixed(2)}</p>
+                    <p className="text-sm text-gray-400">Qty: {trackedOrder.quantity} • Total: ₹{trackedOrder.totalAmount.toFixed(2)}</p>
                   </div>
                   {/* Status Progress Bar */}
                   <div className="space-y-1">
@@ -402,7 +456,7 @@ export default function UserDashboard() {
                         <td className="px-6 py-4">{new Date(token.createdAt).toLocaleDateString()}</td>
                         <td className="px-6 py-4 font-mono font-bold">{token.tokenNumber}</td>
                         <td className="px-6 py-4">{token.itemName} (x{token.quantity})</td>
-                        <td className="px-6 py-4 font-bold">${token.totalAmount.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-bold">₹{token.totalAmount.toFixed(2)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
                             token.status === 'served' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'

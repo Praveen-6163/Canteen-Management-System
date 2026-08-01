@@ -35,7 +35,7 @@ export default function TokenCard({ token, onUpdate, onDelete }) {
           {token.itemName}
         </Typography>
         <Typography sx={{ my: 0.5 }} color="text.secondary" variant="body2">
-          Price: ${token.price.toFixed(2)} x {token.quantity}
+          Price: ₹{token.price.toFixed(2)} x {token.quantity}
         </Typography>
         
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
@@ -43,7 +43,7 @@ export default function TokenCard({ token, onUpdate, onDelete }) {
             Total Price
           </Typography>
           <Typography variant="body1" fontWeight="bold" color="text.primary">
-            ${token.totalAmount.toFixed(2)}
+            ₹{token.totalAmount.toFixed(2)}
           </Typography>
         </Box>
       </CardContent>

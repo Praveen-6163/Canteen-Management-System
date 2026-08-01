@@ -42,4 +42,16 @@ export const deleteTokenAPI = (id) => API.delete(`/tokens/${id}`);
 
 export const fetchAnalyticsAPI = () => API.get('/tokens/analytics');
 
+// Category endpoints
+export const fetchCategoriesAPI = () => API.get('/categories');
+export const createCategoryAPI = (categoryData) => API.post('/categories', categoryData);
+export const updateCategoryAPI = (id, categoryData) => API.put(`/categories/${id}`, categoryData);
+export const deleteCategoryAPI = (id) => API.delete(`/categories/${id}`);
+
+// Menu endpoints
+export const fetchMenuAPI = () => API.get('/menu');
+export const createMenuItemAPI = (menuData) => API.post('/menu', menuData);
+export const updateMenuItemAPI = (id, menuData) => API.put(`/menu/${id}`, menuData);
+export const deleteMenuItemAPI = (id) => API.delete(`/menu/${id}`);
+
 export default API;

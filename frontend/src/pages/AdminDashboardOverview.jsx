@@ -109,7 +109,7 @@ export default function AdminDashboardOverview() {
         <Grid item xs={12} sm={6} md={2.4}>
           <AnalyticsCard
             title="Today's Revenue"
-            value={`$${todayRevenue.toFixed(2)}`}
+            value={`₹${todayRevenue.toFixed(2)}`}
             icon={<AttachMoneyIcon />}
             color="#43A047"
           />
@@ -161,7 +161,7 @@ export default function AdminDashboardOverview() {
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#adminColorSales)"
-                      name="Revenue ($)"
+                      name="Revenue (₹)"
                     />
                     <Area
                       type="monotone"
@@ -205,7 +205,7 @@ export default function AdminDashboardOverview() {
                           </Typography>
                         </TableCell>
                         <TableCell>{order.itemName}</TableCell>
-                        <TableCell fontWeight="bold">${order.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell fontWeight="bold">₹{order.totalAmount.toFixed(2)}</TableCell>
                         <TableCell align="right">
                           <Chip
                             size="small"

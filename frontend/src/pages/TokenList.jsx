@@ -326,8 +326,8 @@ export default function TokenList() {
                     )}
                     <TableCell fontWeight="medium">{token.itemName}</TableCell>
                     <TableCell>{token.quantity}</TableCell>
-                    <TableCell>${token.price.toFixed(2)}</TableCell>
-                    <TableCell fontWeight="bold">${token.totalAmount.toFixed(2)}</TableCell>
+                    <TableCell>₹{token.price.toFixed(2)}</TableCell>
+                    <TableCell fontWeight="bold">₹{token.totalAmount.toFixed(2)}</TableCell>
                     <TableCell>
                       {showAdminFeatures ? (
                         <FormControl size="small" sx={{ m: 0, minWidth: 110 }}>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
-import { fetchTokensAPI, updateTokenAPI, fetchUsersAPI } from '../services/api';
+import { fetchTokensAPI, updateTokenAPI, fetchUsersAPI, fetchCategoriesAPI, createCategoryAPI, updateCategoryAPI, deleteCategoryAPI, fetchMenuAPI, createMenuItemAPI, updateMenuItemAPI, deleteMenuItemAPI } from '../services/api';
 import {
   AreaChart,
   Area,
@@ -46,8 +46,25 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // Category Form States
+  const [catFormOpen, setCatFormOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState(null);
+  const [catName, setCatName] = useState('');
+  const [catDesc, setCatDesc] = useState('');
+
+  // Menu Item Form States
+  const [menuFormOpen, setMenuFormOpen] = useState(false);
+  const [editingMenuItem, setEditingMenuItem] = useState(null);
+  const [menuName, setMenuName] = useState('');
+  const [menuPrice, setMenuPrice] = useState('');
+  const [menuCatId, setMenuCatId] = useState('');
+  const [menuImageURL, setMenuImageURL] = useState('');
+  const [menuAvailable, setMenuAvailable] = useState(true);
 
   useEffect(() => {
     loadAdminData();
@@ -60,6 +77,12 @@ export default function AdminDashboard() {
       setOrders(ordersRes.data.data);
       const usersRes = await fetchUsersAPI();
       setUsers(usersRes.data);
+      
+      // Load Categories & Menu items
+      const catRes = await fetchCategoriesAPI();
+      setCategories(catRes.data);
+      const menuRes = await fetchMenuAPI();
+      setMenuItems(menuRes.data);
     } catch (err) {
       console.error('Error fetching admin data:', err);
     } finally {
@@ -75,6 +98,96 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
       showToast('error', 'Failed to update order status');
+    }
+  };
+
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    if (!catName.trim()) return;
+    try {
+      if (editingCat) {
+        await updateCategoryAPI(editingCat._id, { name: catName, description: catDesc });
+        showToast('success', 'Category updated successfully');
+      } else {
+        await createCategoryAPI({ name: catName, description: catDesc });
+        showToast('success', 'Category created successfully');
+      }
+      setCatName('');
+      setCatDesc('');
+      setEditingCat(null);
+      setCatFormOpen(false);
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('error', err.response?.data?.message || 'Failed to save category');
+    }
+  };
+
+  const handleDeleteCategory = async (catId) => {
+    if (!window.confirm('Are you sure you want to delete this category? All menu items referencing this category will be affected.')) return;
+    try {
+      await deleteCategoryAPI(catId);
+      showToast('success', 'Category deleted successfully');
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('error', err.response?.data?.message || 'Failed to delete category');
+    }
+  };
+
+  const handleSaveMenuItem = async (e) => {
+    e.preventDefault();
+    if (!menuName.trim() || !menuCatId || menuPrice === '') return;
+    try {
+      const itemData = {
+        name: menuName,
+        price: parseFloat(menuPrice),
+        category: menuCatId,
+        imageURL: menuImageURL,
+        isAvailable: menuAvailable
+      };
+
+      if (editingMenuItem) {
+        await updateMenuItemAPI(editingMenuItem._id, itemData);
+        showToast('success', 'Menu item updated successfully');
+      } else {
+        await createMenuItemAPI(itemData);
+        showToast('success', 'Menu item created successfully');
+      }
+      setMenuName('');
+      setMenuPrice('');
+      setMenuCatId('');
+      setMenuImageURL('');
+      setMenuAvailable(true);
+      setEditingMenuItem(null);
+      setMenuFormOpen(false);
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('error', err.response?.data?.message || 'Failed to save menu item');
+    }
+  };
+
+  const handleDeleteMenuItem = async (itemId) => {
+    if (!window.confirm('Are you sure you want to delete this menu item?')) return;
+    try {
+      await deleteMenuItemAPI(itemId);
+      showToast('success', 'Menu item deleted successfully');
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('error', err.response?.data?.message || 'Failed to delete menu item');
+    }
+  };
+
+  const handleToggleAvailability = async (item) => {
+    try {
+      await updateMenuItemAPI(item._id, { isAvailable: !item.isAvailable });
+      showToast('success', `Item is now ${!item.isAvailable ? 'available' : 'unavailable'}`);
+      loadAdminData();
+    } catch (err) {
+      console.error(err);
+      showToast('error', 'Failed to toggle availability');
     }
   };
 
@@ -205,7 +318,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="p-6 bg-[#111116] rounded-2xl border border-white/5">
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider block mb-1">Today's Revenue</span>
-                  <span className="text-3xl font-extrabold text-green-500">${todayRevenue.toFixed(2)}</span>
+                  <span className="text-3xl font-extrabold text-green-500">₹{todayRevenue.toFixed(2)}</span>
                 </div>
                 <div className="p-6 bg-[#111116] rounded-2xl border border-white/5">
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider block mb-1">Pending Orders</span>
@@ -285,7 +398,7 @@ export default function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 font-mono font-bold text-pink-400">{order.tokenNumber}</td>
                         <td className="px-6 py-4">{order.itemName} (x{order.quantity})</td>
-                        <td className="px-6 py-4 font-black">${order.totalAmount.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-black">₹{order.totalAmount.toFixed(2)}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-black uppercase ${
                             order.status === 'ready' ? 'bg-green-500/20 text-green-400' :
@@ -372,20 +485,308 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'menu' && (
-            <div className="p-6 bg-[#111116] border border-white/5 rounded-2xl text-center">
-              <span className="text-5xl block mb-2">📋</span>
-              <h3 className="text-lg font-bold mb-1">Canteen Menu Catalog</h3>
-              <p className="text-sm text-gray-400 max-w-sm mx-auto mb-4">Manage catalog items, daily availabilities, pricing, and display images.</p>
-              <button onClick={() => showToast('success', 'Feature menu item added')} className="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-xl text-xs font-bold transition">Add Food Item</button>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-[#111116] border border-white/5 p-6 rounded-2xl">
+                <div>
+                  <h3 className="text-lg font-bold">Canteen Menu Catalog</h3>
+                  <p className="text-sm text-gray-400">Manage daily food items, availability status, pricing, and visual assets.</p>
+                </div>
+                {!menuFormOpen && (
+                  <button
+                    onClick={() => {
+                      setEditingMenuItem(null);
+                      setMenuName('');
+                      setMenuPrice('');
+                      setMenuCatId(categories[0]?._id || '');
+                      setMenuImageURL('');
+                      setMenuAvailable(true);
+                      setMenuFormOpen(true);
+                    }}
+                    className="bg-pink-600 hover:bg-pink-700 px-4 py-2.5 rounded-xl text-xs font-bold transition"
+                  >
+                    + Add Food Item
+                  </button>
+                )}
+              </div>
+
+              {menuFormOpen ? (
+                <form onSubmit={handleSaveMenuItem} className="max-w-xl bg-[#111116] border border-white/5 rounded-2xl p-6 space-y-4">
+                  <h4 className="text-md font-bold border-b border-white/5 pb-2">
+                    {editingMenuItem ? 'Edit Menu Item' : 'Add New Menu Item'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Item Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={menuName}
+                        onChange={(e) => setMenuName(e.target.value)}
+                        placeholder="e.g. Classic Burger"
+                        className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Price (₹)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        required
+                        value={menuPrice}
+                        onChange={(e) => setMenuPrice(e.target.value)}
+                        placeholder="e.g. 120"
+                        className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Category</label>
+                      <select
+                        required
+                        value={menuCatId}
+                        onChange={(e) => setMenuCatId(e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
+                      >
+                        <option value="">-- Choose Category --</option>
+                        {categories.map(c => (
+                          <option key={c._id} value={c._id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 mb-1">Image URL</label>
+                      <input
+                        type="url"
+                        value={menuImageURL}
+                        onChange={(e) => setMenuImageURL(e.target.value)}
+                        placeholder="e.g. https://images.unsplash.com/..."
+                        className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 py-2">
+                    <input
+                      type="checkbox"
+                      id="menuAvailable"
+                      checked={menuAvailable}
+                      onChange={(e) => setMenuAvailable(e.target.checked)}
+                      className="accent-pink-500 rounded border-white/10 h-4 w-4"
+                    />
+                    <label htmlFor="menuAvailable" className="text-sm cursor-pointer select-none">
+                      Mark as Available for Order
+                    </label>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="submit"
+                      className="bg-pink-600 hover:bg-pink-700 px-5 py-2 rounded-xl text-xs font-bold transition"
+                    >
+                      Save Item
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMenuFormOpen(false)}
+                      className="bg-white/5 hover:bg-white/10 px-5 py-2 rounded-xl text-xs font-bold transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="bg-[#111116] border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5 text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="px-6 py-3">Image</th>
+                          <th className="px-6 py-3">Name</th>
+                          <th className="px-6 py-3">Category</th>
+                          <th className="px-6 py-3">Price</th>
+                          <th className="px-6 py-3">Status</th>
+                          <th className="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 text-sm">
+                        {menuItems.map(item => (
+                          <tr key={item._id} className="hover:bg-white/2">
+                            <td className="px-6 py-4">
+                              <img
+                                src={item.imageURL || 'https://via.placeholder.com/80?text=Food'}
+                                alt={item.name}
+                                className="w-10 h-10 object-cover rounded-xl border border-white/5"
+                              />
+                            </td>
+                            <td className="px-6 py-4 font-bold">{item.name}</td>
+                            <td className="px-6 py-4">
+                              <span className="bg-pink-500/10 text-pink-400 px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                                {item.category?.name || 'N/A'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 font-mono text-white">₹{item.price.toFixed(2)}</td>
+                            <td className="px-6 py-4">
+                              <button
+                                onClick={() => handleToggleAvailability(item)}
+                                className={`px-2.5 py-1 rounded-full text-xs font-black uppercase transition ${
+                                  item.isAvailable ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'
+                                }`}
+                              >
+                                {item.isAvailable ? 'Available' : 'Sold Out'}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2">
+                              <button
+                                onClick={() => {
+                                  setEditingMenuItem(item);
+                                  setMenuName(item.name);
+                                  setMenuPrice(item.price);
+                                  setMenuCatId(item.category?._id || item.category || '');
+                                  setMenuImageURL(item.imageURL || '');
+                                  setMenuAvailable(item.isAvailable);
+                                  setMenuFormOpen(true);
+                                }}
+                                className="bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMenuItem(item._id)}
+                                className="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {menuItems.length === 0 && (
+                          <tr>
+                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                              No menu catalog items created yet.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'categories' && (
-            <div className="p-6 bg-[#111116] border border-white/5 rounded-2xl text-center">
-              <span className="text-5xl block mb-2">🏷️</span>
-              <h3 className="text-lg font-bold mb-1">Canteen Food Categories</h3>
-              <p className="text-sm text-gray-400 max-w-sm mx-auto mb-4">Classify food menu items into Lunch, Breakfast, Snacks, Beverages, etc.</p>
-              <button onClick={() => showToast('success', 'New food category created')} className="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded-xl text-xs font-bold transition">Create Category</button>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center bg-[#111116] border border-white/5 p-6 rounded-2xl">
+                <div>
+                  <h3 className="text-lg font-bold">Food Categories</h3>
+                  <p className="text-sm text-gray-400">Organize food items into Breakfast, Lunch, Snacks, Beverages, etc.</p>
+                </div>
+                {!catFormOpen && (
+                  <button
+                    onClick={() => {
+                      setEditingCat(null);
+                      setCatName('');
+                      setCatDesc('');
+                      setCatFormOpen(true);
+                    }}
+                    className="bg-pink-600 hover:bg-pink-700 px-4 py-2.5 rounded-xl text-xs font-bold transition"
+                  >
+                    + Create Category
+                  </button>
+                )}
+              </div>
+
+              {catFormOpen ? (
+                <form onSubmit={handleSaveCategory} className="max-w-xl bg-[#111116] border border-white/5 rounded-2xl p-6 space-y-4">
+                  <h4 className="text-md font-bold border-b border-white/5 pb-2">
+                    {editingCat ? 'Edit Category' : 'Create New Category'}
+                  </h4>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Category Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={catName}
+                      onChange={(e) => setCatName(e.target.value)}
+                      placeholder="e.g. Beverages"
+                      className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Description</label>
+                    <textarea
+                      value={catDesc}
+                      onChange={(e) => setCatDesc(e.target.value)}
+                      placeholder="Short description of items in this category..."
+                      rows="3"
+                      className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500 resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="submit"
+                      className="bg-pink-600 hover:bg-pink-700 px-5 py-2 rounded-xl text-xs font-bold transition"
+                    >
+                      Save Category
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCatFormOpen(false)}
+                      className="bg-white/5 hover:bg-white/10 px-5 py-2 rounded-xl text-xs font-bold transition"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="bg-[#111116] border border-white/5 rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-white/5 text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          <th className="px-6 py-3">Category Name</th>
+                          <th className="px-6 py-3">Description</th>
+                          <th className="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5 text-sm">
+                        {categories.map(cat => (
+                          <tr key={cat._id} className="hover:bg-white/2">
+                            <td className="px-6 py-4 font-bold">{cat.name}</td>
+                            <td className="px-6 py-4 text-gray-400">{cat.description || 'No description'}</td>
+                            <td className="px-6 py-4 text-right space-x-2">
+                              <button
+                                onClick={() => {
+                                  setEditingCat(cat);
+                                  setCatName(cat.name);
+                                  setCatDesc(cat.description || '');
+                                  setCatFormOpen(true);
+                                }}
+                                className="bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCategory(cat._id)}
+                                className="bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white px-2.5 py-1 rounded text-xs font-bold"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {categories.length === 0 && (
+                          <tr>
+                            <td colSpan="3" className="px-6 py-12 text-center text-gray-500">
+                              No categories defined yet.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

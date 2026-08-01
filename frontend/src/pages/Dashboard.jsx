@@ -174,7 +174,7 @@ export default function Dashboard() {
                       strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorSales)"
-                      name="Revenue ($)"
+                      name="Revenue (₹)"
                     />
                     <Area
                       type="monotone"
@@ -237,7 +237,7 @@ export default function Dashboard() {
                             </Box>
                           </TableCell>
                           <TableCell align="right" fontWeight="bold">
-                            ${order.totalAmount.toFixed(2)}
+                            ₹{order.totalAmount.toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))

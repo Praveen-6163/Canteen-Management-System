@@ -57,7 +57,7 @@ export default function TokenForm({ onSubmit, loading = false }) {
               required
               fullWidth
               type="number"
-              label="Price ($)"
+              label="Price (₹)"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               error={!!errors.price}
@@ -86,7 +86,7 @@ export default function TokenForm({ onSubmit, loading = false }) {
             Total Price:
           </Typography>
           <Typography variant="h6" fontWeight="bold" color="primary.main">
-            ${totalAmount.toFixed(2)}
+            ₹{totalAmount.toFixed(2)}
           </Typography>
         </Box>
 

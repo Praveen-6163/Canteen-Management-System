@@ -89,7 +89,7 @@ export default function TokenFormDialog({ open, onClose, token, onSubmit }) {
                 required
                 fullWidth
                 type="number"
-                label="Price ($)"
+                label="Price (₹)"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 error={!!errors.price}
@@ -118,7 +118,7 @@ export default function TokenFormDialog({ open, onClose, token, onSubmit }) {
               Total Amount
             </Typography>
             <Typography variant="h5" color="primary.main" fontWeight="bold">
-              ${totalAmount.toFixed(2)}
+              ₹{totalAmount.toFixed(2)}
             </Typography>
           </Box>
         </Box>
