@@ -2,13 +2,20 @@ import mongoose from 'mongoose';
 import Admin from '../models/Admin.js';
 import Category from '../models/Category.js';
 import Menu from '../models/Menu.js';
+import User from '../models/User.js';
 
 const seedDefaultAdmin = async () => {
   try {
-    const adminCount = await Admin.countDocuments();
-    if (adminCount === 0) {
-      await Admin.create({ email: 'praveenmedida42@gmail.com' });
-      console.log('Seeded default admin email: praveenmedida42@gmail.com');
+    const defaultAdmins = ['praveenmedida42@gmail.com', 'molletichandana8@gmail.com'];
+    for (const email of defaultAdmins) {
+      const exists = await Admin.findOne({ email });
+      if (!exists) {
+        await Admin.create({ email });
+        console.log(`Seeded default admin email: ${email}`);
+      }
+      
+      // Also update existing user record to admin role if they exist
+      await User.updateOne({ email }, { role: 'admin' });
     }
   } catch (error) {
     console.error('Error seeding default admin:', error);
