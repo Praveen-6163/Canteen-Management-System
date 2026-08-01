@@ -38,7 +38,7 @@ export const googleLogin = async (req, res) => {
     
     // Check if email exists in the admins collection
     const adminRecord = await Admin.findOne({ email });
-    if (adminRecord || (process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL)) {
+    if (adminRecord) {
       targetRole = 'admin';
     }
 
