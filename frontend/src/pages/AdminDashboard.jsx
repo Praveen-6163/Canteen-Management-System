@@ -679,7 +679,7 @@ export default function AdminDashboard() {
               <div className="flex justify-between items-center bg-[#111116] border border-white/5 p-6 rounded-2xl">
                 <div>
                   <h3 className="text-lg font-bold">Food Categories</h3>
-                  <p className="text-sm text-gray-400">Organize food items into Breakfast, Lunch, Snacks, Beverages, etc.</p>
+                  <p className="text-sm text-gray-400">Organize food items into Breakfast, Lunch, Dinner, etc.</p>
                 </div>
                 {!catFormOpen && (
                   <button
@@ -708,7 +708,7 @@ export default function AdminDashboard() {
                       required
                       value={catName}
                       onChange={(e) => setCatName(e.target.value)}
-                      placeholder="e.g. Beverages"
+                      placeholder="e.g. Dinner"
                       className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
                     />
                   </div>

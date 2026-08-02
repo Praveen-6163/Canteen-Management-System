@@ -40,32 +40,38 @@ const seedDefaultAdmin = async () => {
 
 const seedDefaultCategoriesAndMenu = async () => {
   try {
-    const categoryCount = await Category.countDocuments();
-    if (categoryCount === 0) {
-      const breakfast = await Category.create({ name: 'Breakfast', description: 'Start your morning right' });
-      const lunch = await Category.create({ name: 'Lunch', description: 'Hearty afternoon meals' });
-      const snacks = await Category.create({ name: 'Snacks', description: 'Quick bites and refreshments' });
-      const beverages = await Category.create({ name: 'Beverages', description: 'Hot and cold drinks' });
-      console.log('Seeded default categories: Breakfast, Lunch, Snacks, Beverages');
+    const dinnerCategory = await Category.findOne({ name: 'Dinner' });
+    if (!dinnerCategory) {
+      console.log('Dinner category not found. Restructuring categories to Breakfast, Lunch, and Dinner...');
+      
+      // Clear existing to avoid duplicate conflicts and ensure fresh transition to the new layout
+      await Category.deleteMany({});
+      await Menu.deleteMany({});
+      
+      const breakfast = await Category.create({ name: 'Breakfast', description: 'Delicious morning tiffins' });
+      const lunch = await Category.create({ name: 'Lunch', description: 'Hearty meals and biryanis' });
+      const dinner = await Category.create({ name: 'Dinner', description: 'Perfect dinner choices' });
+      
+      console.log('Seeded categories: Breakfast, Lunch, Dinner');
 
-      const menuCount = await Menu.countDocuments();
-      if (menuCount === 0) {
-        await Menu.create([
-          { name: 'Classic Burger', price: 120, category: snacks._id, imageURL: '/images/classic_burger.png', isAvailable: true },
-          { name: 'Cheese Pizza', price: 250, category: lunch._id, imageURL: '/images/cheese_pizza.png', isAvailable: true },
-          { name: 'Club Sandwich', price: 90, category: breakfast._id, imageURL: '/images/club_sandwich.png', isAvailable: true },
-          { name: 'Garden Salad', price: 110, category: lunch._id, imageURL: '/images/garden_salad.png', isAvailable: true },
-          { name: 'Hot Espresso', price: 60, category: beverages._id, imageURL: '/images/hot_espresso.png', isAvailable: true }
-        ]);
-        console.log('Seeded default menu items.');
-      } else {
-        await Menu.updateOne({ name: 'Classic Burger' }, { imageURL: '/images/classic_burger.png' });
-        await Menu.updateOne({ name: 'Cheese Pizza' }, { imageURL: '/images/cheese_pizza.png' });
-        await Menu.updateOne({ name: 'Club Sandwich' }, { imageURL: '/images/club_sandwich.png' });
-        await Menu.updateOne({ name: 'Garden Salad' }, { imageURL: '/images/garden_salad.png' });
-        await Menu.updateOne({ name: 'Hot Espresso' }, { imageURL: '/images/hot_espresso.png' });
-        console.log('Updated existing default menu item image URLs to realistic local assets.');
-      }
+      await Menu.create([
+        // Breakfast (Tiffins)
+        { name: 'Masala Dosa', price: 60, category: breakfast._id, imageURL: '/images/masala_dosa.png', isAvailable: true },
+        { name: 'Idli Sambar', price: 40, category: breakfast._id, imageURL: '/images/idli_sambar.png', isAvailable: true },
+        { name: 'Medu Vada', price: 50, category: breakfast._id, imageURL: '/images/medu_vada.png', isAvailable: true },
+        { name: 'Poori Curry', price: 60, category: breakfast._id, imageURL: '/images/poori_curry.png', isAvailable: true },
+        
+        // Lunch (Biryani & Meals)
+        { name: 'Chicken Biryani', price: 220, category: lunch._id, imageURL: '/images/chicken_biryani.png', isAvailable: true },
+        { name: 'Paneer Biryani', price: 180, category: lunch._id, imageURL: '/images/paneer_biryani.png', isAvailable: true },
+        { name: 'Veg Meals', price: 120, category: lunch._id, imageURL: '/images/veg_meals.png', isAvailable: true },
+        
+        // Dinner (Fried rice, Noodles, Chapati)
+        { name: 'Chapati Curry', price: 80, category: dinner._id, imageURL: '/images/chapati_curry.png', isAvailable: true },
+        { name: 'Egg Fried Rice', price: 110, category: dinner._id, imageURL: '/images/egg_fried_rice.png', isAvailable: true },
+        { name: 'Chicken Noodles', price: 130, category: dinner._id, imageURL: '/images/chicken_noodles.png', isAvailable: true }
+      ]);
+      console.log('Seeded new menu items.');
     }
   } catch (error) {
     console.error('Error seeding default categories/menu:', error);
