@@ -13,8 +13,27 @@ dotenv.config();
 
 const app = express();
 
-// Standard Middlewares
-app.use(cors());
+// CORS configuration - allow Vercel, Netlify, and local dev origins
+const allowedOrigins = [
+  'https://canteen-management-system-chi.vercel.app',
+  'https://canteenmanagementsystemai.netlify.app',
+  'http://localhost:3000',
+  'http://localhost:5001',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Postman, same-origin)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Also allow any netlify.app and vercel.app subdomain
+    if (origin.endsWith('.netlify.app') || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Database connection middleware for serverless requests
