@@ -49,11 +49,15 @@ export const verifyGoogleToken = async (idToken) => {
       throw new Error('Invalid token structure');
     }
 
-    // Retrieve active public certificates
-    const publicKeys = await getFirebasePublicKeys();
-    
     // Choose certificate matching the token key ID
-    const certificate = publicKeys[decodedToken.header.kid];
+    let certificate = publicKeys[decodedToken.header.kid];
+    if (!certificate) {
+      // Force refresh cached keys in case Google rotated public certificates
+      cachedKeys = null;
+      const refreshedKeys = await getFirebasePublicKeys();
+      certificate = refreshedKeys[decodedToken.header.kid];
+    }
+
     if (!certificate) {
       throw new Error('No matching public certificate found for key ID');
     }

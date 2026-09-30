@@ -40,8 +40,16 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      if (
+        err.code === 'auth/wrong-password' ||
+        err.code === 'auth/user-not-found' ||
+        err.code === 'auth/invalid-credential'
+      ) {
         setError('Invalid email or password.');
+      } else if (err.code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Please try again later.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your internet connection.');
       } else {
         setError(err.response?.data?.message || err.message || 'Login failed.');
       }
@@ -62,7 +70,13 @@ export default function Login() {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || err.message || 'Google authentication failed.');
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError('Google sign-in popup was closed before completing login.');
+      } else if (err.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection.');
+      } else {
+        setError(err.response?.data?.message || err.message || 'Google authentication failed.');
+      }
     } finally {
       setLoading(false);
     }
