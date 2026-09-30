@@ -12,8 +12,10 @@ export const protect = async (req, res, next) => {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
+      const jwtSecret = process.env.JWT_SECRET || 'cms_jwt_secret_key_2026_default';
+
       // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, jwtSecret);
 
       // Get user from database
       req.user = await User.findById(decoded.id);

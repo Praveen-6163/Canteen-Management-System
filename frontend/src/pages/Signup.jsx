@@ -61,9 +61,9 @@ export default function Signup() {
       // 4. Send Firebase Auth credentials token to backend
       const res = await loginAPI(token);
       
-      // 5. Store session in global context and redirect to home
+      // 5. Store session in global context and redirect to dashboard
       login(res.data, res.data.token);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       console.error('Registration signup error:', err);
       if (err.code === 'auth/email-already-in-use') {

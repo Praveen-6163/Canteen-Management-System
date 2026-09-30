@@ -9,9 +9,9 @@ export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isAuthenticated()) {
-        navigate('/');
+        navigate('/dashboard');
       } else {
-        navigate('/login');
+        navigate('/');
       }
     }, 1500); // 1.5 seconds splash effect
 
