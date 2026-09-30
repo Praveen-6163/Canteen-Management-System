@@ -11,14 +11,22 @@ import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB Database
-connectDB();
-
 const app = express();
 
 // Standard Middlewares
 app.use(cors());
 app.use(express.json());
+
+// Database connection middleware for serverless requests
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection error in middleware:', err);
+    res.status(500).json({ message: 'Database connection failed. Please try again in a few moments.' });
+  }
+});
 
 // API Routes
 app.use('/api/users', authRoutes);

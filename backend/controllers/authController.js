@@ -40,8 +40,9 @@ export const googleLogin = async (req, res) => {
 
     let targetRole = 'user';
     
-    // Check if email exists in the admins collection (case-insensitive)
-    const adminRecord = await Admin.findOne({ email: { $regex: new RegExp(`^${normalizedEmail}$`, 'i') } });
+    // Check if email exists in the admins collection (case-insensitive & regex-escaped)
+    const escapedEmail = normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const adminRecord = await Admin.findOne({ email: { $regex: new RegExp(`^${escapedEmail}$`, 'i') } });
     if (adminRecord) {
       targetRole = 'admin';
     }
