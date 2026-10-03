@@ -16,6 +16,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import MenuIcon from '@mui/icons-material/Menu';
 import NotificationsIcon from '@mui/icons-material/Notifications';
+import OrderWaitEstimate from '../components/OrderWaitEstimate';
 
 export default function UserDashboard() {
   const navigate = useNavigate();
@@ -42,6 +43,8 @@ export default function UserDashboard() {
   useEffect(() => {
     loadUserTokens();
     loadMenuAndCategories();
+    const refreshInterval = window.setInterval(loadUserTokens, 15000);
+    return () => window.clearInterval(refreshInterval);
   }, []);
 
   const loadMenuAndCategories = async () => {
@@ -59,7 +62,11 @@ export default function UserDashboard() {
     try {
       setLoading(true);
       const res = await fetchTokensAPI();
-      setTokens(res.data.data);
+      const userTokens = res.data.data;
+      setTokens(userTokens);
+      setTrackedOrder(current => current
+        ? userTokens.find(token => token._id === current._id) || current
+        : current);
     } catch (err) {
       console.error('Error fetching user tokens:', err);
     } finally {
@@ -344,6 +351,7 @@ export default function UserDashboard() {
                       <th className="px-6 py-3">Qty</th>
                       <th className="px-6 py-3">Total Amount</th>
                       <th className="px-6 py-3">Status</th>
+                      <th className="px-6 py-3">Estimated Wait</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-sm">
@@ -364,11 +372,12 @@ export default function UserDashboard() {
                             {token.status}
                           </span>
                         </td>
+                        <td className="px-6 py-4"><OrderWaitEstimate token={token} /></td>
                       </tr>
                     ))}
                     {tokens.length === 0 && (
                       <tr>
-                        <td colSpan="5" className="px-6 py-12 text-center text-gray-400">
+                        <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
                           You have no orders yet. Go to Today's Menu to place an order.
                         </td>
                       </tr>
@@ -412,6 +421,7 @@ export default function UserDashboard() {
                     <h4 className="text-lg font-bold">{trackedOrder.itemName}</h4>
                     <p className="text-sm text-gray-400">Qty: {trackedOrder.quantity} • Total: ₹{trackedOrder.totalAmount.toFixed(2)}</p>
                   </div>
+                  <OrderWaitEstimate token={trackedOrder} />
                   {/* Status Progress Bar */}
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs text-gray-500">
@@ -461,7 +471,7 @@ export default function UserDashboard() {
                           <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold ${
                             token.status === 'served' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
                           }`}>
-                            {token.status}
+                            <OrderWaitEstimate token={token} />
                           </span>
                         </td>
                       </tr>

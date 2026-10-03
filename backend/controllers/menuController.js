@@ -11,9 +11,12 @@ export const getMenu = async (req, res) => {
 };
 
 export const createMenuItem = async (req, res) => {
-  const { name, price, category, imageURL, isAvailable } = req.body;
+  const { name, price, category, imageURL, isAvailable, preparationTime } = req.body;
   if (!name || price === undefined || !category) {
     return res.status(400).json({ message: 'Name, price and category are required' });
+  }
+  if (preparationTime !== undefined && (!Number.isFinite(Number(preparationTime)) || Number(preparationTime) < 0)) {
+    return res.status(400).json({ message: 'Preparation time must be a non-negative number of minutes' });
   }
   try {
     // Validate category exists
@@ -27,6 +30,7 @@ export const createMenuItem = async (req, res) => {
       category,
       imageURL,
       isAvailable: isAvailable !== undefined ? isAvailable : true,
+      preparationTime: preparationTime === undefined ? 5 : Number(preparationTime),
     });
     const populated = await Menu.findById(menuItem._id).populate('category', 'name description');
     res.status(201).json(populated);
@@ -36,7 +40,10 @@ export const createMenuItem = async (req, res) => {
 };
 
 export const updateMenuItem = async (req, res) => {
-  const { name, price, category, imageURL, isAvailable } = req.body;
+  const { name, price, category, imageURL, isAvailable, preparationTime } = req.body;
+  if (preparationTime !== undefined && (!Number.isFinite(Number(preparationTime)) || Number(preparationTime) < 0)) {
+    return res.status(400).json({ message: 'Preparation time must be a non-negative number of minutes' });
+  }
   try {
     const menuItem = await Menu.findById(req.params.id);
     if (!menuItem) {
@@ -53,6 +60,7 @@ export const updateMenuItem = async (req, res) => {
     if (price !== undefined) menuItem.price = price;
     if (imageURL !== undefined) menuItem.imageURL = imageURL;
     if (isAvailable !== undefined) menuItem.isAvailable = isAvailable;
+    if (preparationTime !== undefined) menuItem.preparationTime = Number(preparationTime);
 
     const updated = await menuItem.save();
     const populated = await Menu.findById(updated._id).populate('category', 'name description');

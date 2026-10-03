@@ -1,5 +1,34 @@
 import Token from '../models/Token.js';
 import User from '../models/User.js';
+import Menu from '../models/Menu.js';
+import { calculateEstimatedWaitTimes } from '../utils/calculateEstimatedWaitTimes.js';
+
+const ACTIVE_STATUSES = ['pending', 'preparing'];
+
+const getEstimatedWaits = async () => {
+  const activeTokens = await Token.find({ status: { $in: ACTIVE_STATUSES } })
+    .select('itemName quantity status createdAt preparingAt')
+    .sort({ createdAt: 1, _id: 1 })
+    .lean();
+
+  if (activeTokens.length === 0) return new Map();
+
+  const itemNames = [...new Set(activeTokens.map(token => token.itemName?.trim()).filter(Boolean))];
+  const menuItems = await Menu.find({ name: { $in: itemNames } }).select('name preparationTime');
+  const preparationTimes = new Map(
+    menuItems.map(item => [item.name.trim().toLowerCase(), item.preparationTime])
+  );
+
+  return calculateEstimatedWaitTimes(activeTokens, preparationTimes);
+};
+
+const withEstimatedWait = (token, estimatedWaits) => {
+  const tokenData = token.toObject ? token.toObject() : token;
+  return {
+    ...tokenData,
+    estimatedWaitMinutes: estimatedWaits.get(String(tokenData._id)) ?? null,
+  };
+};
 
 /**
  * Helper to generate next Token Number (e.g. T-1001, T-1002, etc.)
@@ -83,10 +112,11 @@ export const getTokens = async (req, res) => {
       .sort(sortBy)
       .skip(skip)
       .limit(limit);
+    const estimatedWaits = await getEstimatedWaits();
 
     res.status(200).json({
       success: true,
-      data: tokens,
+      data: tokens.map(token => withEstimatedWait(token, estimatedWaits)),
       page,
       pages: Math.ceil(total / limit),
       total,
@@ -113,7 +143,8 @@ export const getTokenById = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to view this token' });
     }
 
-    res.status(200).json(token);
+    const estimatedWaits = await getEstimatedWaits();
+    res.status(200).json(withEstimatedWait(token, estimatedWaits));
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -146,7 +177,8 @@ export const createToken = async (req, res) => {
     });
 
     const populatedToken = await Token.findById(token._id).populate('userId', 'name email photoURL');
-    res.status(201).json(populatedToken);
+    const estimatedWaits = await getEstimatedWaits();
+    res.status(201).json(withEstimatedWait(populatedToken, estimatedWaits));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -166,7 +198,12 @@ export const updateToken = async (req, res) => {
 
     if (req.user.role === 'admin') {
       // Admins can update any field & status
-      if (status) token.status = status;
+      if (status) {
+        token.status = status;
+        token.preparingAt = status === 'preparing'
+          ? token.preparingAt || new Date()
+          : undefined;
+      }
       if (itemName) token.itemName = itemName;
       if (quantity) {
         token.quantity = quantity;
@@ -197,7 +234,8 @@ export const updateToken = async (req, res) => {
 
     const updatedToken = await token.save();
     const populatedToken = await Token.findById(updatedToken._id).populate('userId', 'name email photoURL');
-    res.status(200).json(populatedToken);
+    const estimatedWaits = await getEstimatedWaits();
+    res.status(200).json(withEstimatedWait(populatedToken, estimatedWaits));
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

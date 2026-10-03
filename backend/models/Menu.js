@@ -23,11 +23,18 @@ const menuSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    preparationTime: {
+      type: Number,
+      min: 0,
+      default: 5,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+menuSchema.index({ name: 1 });
 
 const Menu = mongoose.model('Menu', menuSchema);
 export default Menu;

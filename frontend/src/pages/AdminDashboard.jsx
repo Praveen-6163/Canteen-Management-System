@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { fetchTokensAPI, updateTokenAPI, fetchUsersAPI, fetchCategoriesAPI, createCategoryAPI, updateCategoryAPI, deleteCategoryAPI, fetchMenuAPI, createMenuItemAPI, updateMenuItemAPI, deleteMenuItemAPI } from '../services/api';
+import OrderWaitEstimate from '../components/OrderWaitEstimate';
 import {
   AreaChart,
   Area,
@@ -62,12 +63,23 @@ export default function AdminDashboard() {
   const [editingMenuItem, setEditingMenuItem] = useState(null);
   const [menuName, setMenuName] = useState('');
   const [menuPrice, setMenuPrice] = useState('');
+  const [menuPreparationTime, setMenuPreparationTime] = useState('5');
   const [menuCatId, setMenuCatId] = useState('');
   const [menuImageURL, setMenuImageURL] = useState('');
   const [menuAvailable, setMenuAvailable] = useState(true);
 
   useEffect(() => {
     loadAdminData();
+    const refreshOrders = async () => {
+      try {
+        const ordersRes = await fetchTokensAPI();
+        setOrders(ordersRes.data.data);
+      } catch (err) {
+        console.error('Error refreshing admin orders:', err);
+      }
+    };
+    const refreshInterval = window.setInterval(refreshOrders, 15000);
+    return () => window.clearInterval(refreshInterval);
   }, []);
 
   const loadAdminData = async () => {
@@ -137,11 +149,12 @@ export default function AdminDashboard() {
 
   const handleSaveMenuItem = async (e) => {
     e.preventDefault();
-    if (!menuName.trim() || !menuCatId || menuPrice === '') return;
+    if (!menuName.trim() || !menuCatId || menuPrice === '' || menuPreparationTime === '') return;
     try {
       const itemData = {
         name: menuName,
         price: parseFloat(menuPrice),
+        preparationTime: Number(menuPreparationTime),
         category: menuCatId,
         imageURL: menuImageURL,
         isAvailable: menuAvailable
@@ -156,6 +169,7 @@ export default function AdminDashboard() {
       }
       setMenuName('');
       setMenuPrice('');
+      setMenuPreparationTime('5');
       setMenuCatId('');
       setMenuImageURL('');
       setMenuAvailable(true);
@@ -386,6 +400,7 @@ export default function AdminDashboard() {
                       <th className="px-6 py-3">Item</th>
                       <th className="px-6 py-3">Total</th>
                       <th className="px-6 py-3">Status</th>
+                      <th className="px-6 py-3">Estimated Wait</th>
                       <th className="px-6 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
@@ -410,6 +425,7 @@ export default function AdminDashboard() {
                             {order.status}
                           </span>
                         </td>
+                        <td className="px-6 py-4"><OrderWaitEstimate token={order} compact /></td>
                         <td className="px-6 py-4 text-right space-x-2">
                           <button
                             onClick={() => handleUpdateStatus(order._id, 'preparing')}
@@ -497,6 +513,7 @@ export default function AdminDashboard() {
                       setEditingMenuItem(null);
                       setMenuName('');
                       setMenuPrice('');
+                      setMenuPreparationTime('5');
                       setMenuCatId(categories[0]?._id || '');
                       setMenuImageURL('');
                       setMenuAvailable(true);
@@ -539,6 +556,18 @@ export default function AdminDashboard() {
                         className="w-full rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 mb-1">Preparation Time (minutes)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      required
+                      value={menuPreparationTime}
+                      onChange={(e) => setMenuPreparationTime(e.target.value)}
+                      className="w-full sm:w-1/2 rounded-xl border border-white/10 bg-[#191922] px-4 py-2.5 text-sm outline-none text-white focus:border-pink-500"
+                    />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -604,6 +633,7 @@ export default function AdminDashboard() {
                           <th className="px-6 py-3">Name</th>
                           <th className="px-6 py-3">Category</th>
                           <th className="px-6 py-3">Price</th>
+                          <th className="px-6 py-3">Prep (min)</th>
                           <th className="px-6 py-3">Status</th>
                           <th className="px-6 py-3 text-right">Actions</th>
                         </tr>
@@ -625,6 +655,7 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="px-6 py-4 font-mono text-white">₹{item.price.toFixed(2)}</td>
+                            <td className="px-6 py-4">{item.preparationTime ?? 5}</td>
                             <td className="px-6 py-4">
                               <button
                                 onClick={() => handleToggleAvailability(item)}
@@ -641,6 +672,7 @@ export default function AdminDashboard() {
                                   setEditingMenuItem(item);
                                   setMenuName(item.name);
                                   setMenuPrice(item.price);
+                                  setMenuPreparationTime(item.preparationTime ?? 5);
                                   setMenuCatId(item.category?._id || item.category || '');
                                   setMenuImageURL(item.imageURL || '');
                                   setMenuAvailable(item.isAvailable);
@@ -661,7 +693,7 @@ export default function AdminDashboard() {
                         ))}
                         {menuItems.length === 0 && (
                           <tr>
-                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                            <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                               No menu catalog items created yet.
                             </td>
                           </tr>

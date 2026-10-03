@@ -33,6 +33,9 @@ const tokenSchema = new mongoose.Schema(
       enum: ['pending', 'preparing', 'ready', 'served', 'cancelled'],
       default: 'pending',
     },
+    preparingAt: {
+      type: Date,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -43,6 +46,8 @@ const tokenSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+tokenSchema.index({ status: 1, createdAt: 1 });
 
 const Token = mongoose.model('Token', tokenSchema);
 

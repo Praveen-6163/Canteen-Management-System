@@ -31,6 +31,7 @@ import ConfirmationDialog from '../components/ConfirmationDialog';
 import TokenFormDialog from '../components/TokenFormDialog';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
+import OrderWaitEstimate from '../components/OrderWaitEstimate';
 import {
   fetchTokensAPI,
   updateTokenAPI,
@@ -63,9 +64,9 @@ export default function TokenList() {
 
   const { user: currentUser, isAdmin: showAdminFeatures } = useAuth();
 
-  const loadTokens = async () => {
+  const loadTokens = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const params = {
         page,
         limit: 8,
@@ -83,13 +84,18 @@ export default function TokenList() {
       console.error(err);
       showToast('Error loading tokens.', 'error');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
     loadTokens();
   }, [page, status, sort, startDate, endDate]);
+
+  useEffect(() => {
+    const refreshInterval = window.setInterval(() => loadTokens(false), 15000);
+    return () => window.clearInterval(refreshInterval);
+  }, [page, status, sort, startDate, endDate, search]);
 
   const handleSearchTrigger = () => {
     setPage(1);
@@ -304,6 +310,7 @@ export default function TokenList() {
                   <TableCell sx={{ fontWeight: 'bold' }}>Price</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Total</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Estimated Wait</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Order Date</TableCell>
                   <TableCell align="right" sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
@@ -367,6 +374,7 @@ export default function TokenList() {
                         </Box>
                       )}
                     </TableCell>
+                    <TableCell><OrderWaitEstimate token={token} compact /></TableCell>
                     <TableCell sx={{ fontSize: 13 }}>
                       {new Date(token.createdAt).toLocaleDateString()}
                     </TableCell>
