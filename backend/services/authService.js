@@ -50,6 +50,7 @@ export const verifyGoogleToken = async (idToken) => {
     }
 
     // Choose certificate matching the token key ID
+    const publicKeys = await getFirebasePublicKeys();
     let certificate = publicKeys[decodedToken.header.kid];
     if (!certificate) {
       // Force refresh cached keys in case Google rotated public certificates
